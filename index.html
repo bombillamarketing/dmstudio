@@ -1120,7 +1120,7 @@ function fmtMin(m) {
   return r ? `${h} h ${r} min` : `${h} h`;
 }
 function fmt12(min) {
-  const h = Math.floor(min / 60), m = min % 60;
+  const h = Math.floor(min / 60) % 24, m = min % 60;      // % 24: una cita que pasa de medianoche
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "a. m." : "p. m."}`;
 }
 const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
@@ -1538,7 +1538,8 @@ function horarioArea(area) {
 }
 const diaDe = (area, d) => (d ? horarioArea(area)[ymd(d)] || null : null);
 const dateDe = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
-/* Horas de inicio posibles ese día para la duración del área (respeta apertura, cierre y almuerzo) */
+/* Horas de inicio posibles ese día: desde la apertura hasta la hora de cierre inclusive
+   (la cita puede terminar después del cierre); no se cruzan con el almuerzo */
 function slotsDe(area, d) {
   const h = diaDe(area, d);
   if (!h || typeof h !== "object") return [];
@@ -1547,7 +1548,7 @@ function slotsDe(area, d) {
   const now = new Date();
   const limite = sameDay(d, now) ? now.getHours() * 60 + now.getMinutes() + CONFIG.anticipacionMin : -1;
   const out = [];
-  for (let m = ini; m + dur <= fin; m += CONFIG.intervaloMin) {
+  for (let m = ini; m <= fin; m += CONFIG.intervaloMin) {
     if (desc && m < desc[1] && desc[0] < m + dur) continue;   // se cruza con el almuerzo
     if (m < limite) continue;                                 // ya pasó o es muy pronto
     out.push(m);
